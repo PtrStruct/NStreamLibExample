@@ -33,7 +33,8 @@ namespace Client
                 switch (opcode)
                 {
                     case 1:
-
+                        var count = _nStream.ReadHWord();
+                        Console.Title = count.ToString();
                         break;
                     case 3:
                         var j = _nStream.ReadString();

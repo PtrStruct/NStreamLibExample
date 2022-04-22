@@ -51,6 +51,7 @@ namespace Server
                 foreach (var player in _players)
                 {
                     player.NStream.WriteByte(1);
+                    player.NStream.WriteHWord((short)_players.Count);
                     player.Socket.Client.Send(player.NStream.ToArray());
 
                     if (player.ID == connectedPlayer.ID) continue;
