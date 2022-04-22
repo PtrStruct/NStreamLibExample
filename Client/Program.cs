@@ -9,22 +9,21 @@ namespace Client
     {
         private static TcpClient _tcpClient;
         private static NStream _nStream;
+        private static List<string> _remotePlayers = new List<string>();
+
         static void Main(string[] args)
         {
             _tcpClient = new TcpClient();
             _tcpClient.Connect("127.0.0.1", 5757);
             _nStream = new NStream(_tcpClient.GetStream());
-            
+
             new Thread(ListenForData).Start();
-            
+
             while (true)
             {
-                for (int i = 0; i < 2; i++)
-                {
-                    _nStream.WriteString("Hello World!");
-                    _tcpClient.Client.Send(_nStream.ToArray());
-                }
-                Thread.Sleep(800);
+                _nStream.WriteByte(10);
+                _nStream.WriteString(Console.ReadLine());
+                _tcpClient.Client.Send(_nStream.ToArray());
             }
         }
 
@@ -32,7 +31,24 @@ namespace Client
         {
             while (true)
             {
-                Console.WriteLine(_nStream.ReadString());
+                var opcode = _nStream.ReadByte();
+                switch (opcode)
+                {
+                    case 1:
+
+                        break;
+                    case 3:
+                        var j = _nStream.ReadString();
+                        _remotePlayers.Add(j);
+                        Console.WriteLine($"Player Connected! {j}");
+                        break;
+                    case 10:
+                        Console.WriteLine(_nStream.ReadString());
+                        break;
+                    default:
+                        Console.WriteLine($"[{opcode}] - wat?");
+                        break;
+                }
             }
         }
     }

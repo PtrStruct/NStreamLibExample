@@ -58,7 +58,6 @@ namespace NStreamLib
                    ReadByte() << 16 |
                    ReadByte() << 8 |
                    ReadByte();
-            
         }
 
         public byte[] ToArray()

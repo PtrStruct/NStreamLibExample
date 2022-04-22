@@ -28,13 +28,9 @@ namespace Server
             while (true)
             {
                 sw.Start();
-                /* Per Cycle */
-                /* - Accept 10 Connections */
-                /* - Gather Up To 10 Full Packets Per Connected Client */
-                /* Broadcast To All Clients */
-
+                
                 Cycle();
-
+                
                 sw.Stop();
                 var sleepDelta = tickRate - (int)sw.ElapsedMilliseconds;
                 if (sleepDelta > 0)
@@ -48,29 +44,49 @@ namespace Server
 
         private static void Cycle()
         {
+            /* Broadcast Connection */
             if (_tcpListener.Pending())
-                _players.Add(new Player(_tcpListener.AcceptTcpClient()));
+            {
+                var connectedPlayer = new Player(_tcpListener.AcceptTcpClient());
+                _players.Add(connectedPlayer);
+
+                foreach (var player in _players)
+                {
+                    player.NStream.WriteByte(1); /* Update Count */
+                    player.Socket.Client.Send(player.NStream.ToArray());
+
+                    if (player.ID == connectedPlayer.ID) continue;
+                    player.NStream.WriteByte(3);
+                    player.NStream.WriteString(connectedPlayer.ID.ToString());
+                    player.Socket.Client.Send(player.NStream.ToArray());
+                }
+            }
 
             foreach (var player in _players)
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    if (player.Socket.Available <= 0)
+                    if (player.Socket.Available <= 0) continue;
+                    var opcode = player.NStream.ReadByte();
+
+                    switch (opcode)
                     {
-                        Console.WriteLine("No more from this socket");
-                        continue;
-                    }
+                        case 10: //msg
+                            var msg = player.NStream.ReadString();
+                            Console.WriteLine($"Received: {msg} from {player.Socket.Client.RemoteEndPoint}");
 
-                    var msg = player.NStream.ReadString();
-                    Console.WriteLine($"Received: {msg} from {player.Socket.Client.RemoteEndPoint}");
+                            for (int r = 0; r < _players.Count; r++)
+                            {
+                                if (_players[r].ID == player.ID)
+                                    continue;
 
-                    for (int r = 0; r < _players.Count; r++)
-                    {
-                        if (_players[r].ID == player.ID)
-                            continue;
-
-                        player.NStream.WriteString(msg);
-                        _players[r].Socket.Client.Send(player.NStream.ToArray());
+                                player.NStream.WriteByte(10);
+                                player.NStream.WriteString($"From {player.ID}: {msg}");
+                                _players[r].Socket.Client.Send(player.NStream.ToArray());
+                            }
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
