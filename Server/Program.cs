@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace Server
 {
@@ -28,9 +27,9 @@ namespace Server
             while (true)
             {
                 sw.Start();
-                
+
                 Cycle();
-                
+
                 sw.Stop();
                 var sleepDelta = tickRate - (int)sw.ElapsedMilliseconds;
                 if (sleepDelta > 0)
@@ -44,7 +43,6 @@ namespace Server
 
         private static void Cycle()
         {
-            /* Broadcast Connection */
             if (_tcpListener.Pending())
             {
                 var connectedPlayer = new Player(_tcpListener.AcceptTcpClient());
@@ -52,7 +50,7 @@ namespace Server
 
                 foreach (var player in _players)
                 {
-                    player.NStream.WriteByte(1); /* Update Count */
+                    player.NStream.WriteByte(1);
                     player.Socket.Client.Send(player.NStream.ToArray());
 
                     if (player.ID == connectedPlayer.ID) continue;
@@ -71,7 +69,7 @@ namespace Server
 
                     switch (opcode)
                     {
-                        case 10: //msg
+                        case 10:
                             var msg = player.NStream.ReadString();
                             Console.WriteLine($"Received: {msg} from {player.Socket.Client.RemoteEndPoint}");
 
